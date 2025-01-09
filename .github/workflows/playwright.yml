@@ -25,10 +25,32 @@ jobs:
         name: playwright-report
         path: playwright-report/
         retention-days: 30
-  # Publish the Playwright report to GitHub Pages
-    - name: Deploy to GitHub Pages
-      if: success()
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./playwright-report  # Path to the Playwright report
+  deploy-report:
+    needs: test
+    runs-on: ubuntu-latest
+    if: ${{ always() }} # Ensures deployment runs even if tests fail
+
+    steps:
+      # Check out the repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Download Playwright report artifact
+      - name: Download Playwright Report
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-report
+          path: ./playwright-report
+
+      # Copy the report to the public directory for GitHub Pages
+      - name: Copy Playwright Report
+        run: |
+          mkdir -p public
+          cp -R playwright-report/* public/
+
+      # Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
